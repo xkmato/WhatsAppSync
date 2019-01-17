@@ -197,8 +197,6 @@ class Contact(models.Model):
             with open('media/' + str(txt_file.log)) as txtfile:
                 for line_num, line_msg in enumerate(txtfile):
 
-                    # msgs.append(str(line_num) + ' ' + line_msg)
-
                     first_appearance = line_msg.find(":")
                     if ":" not in line_msg[first_appearance + 1:]:
                         list_of_msg_line = line_msg.split(",", 1)

@@ -292,7 +292,7 @@ class Log(models.Model):
         if cls.objects.filter(synced=False).exists():
             txt_files = cls.objects.filter(synced=False).order_by('id')[:100]
             read = Contact.read_txt_log(txt_files)
-        return len(read)
+        return read
 
     @classmethod
     def add_mulitple_logs_from_logs_directory(cls):

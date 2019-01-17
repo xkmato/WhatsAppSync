@@ -178,43 +178,43 @@ class Contact(models.Model):
             return
 
     @classmethod
-    def read_txt_log(cls, txt_file):
+    def read_txt_log(cls, txt_files):
         msgs = []
 
         msg_count = 0
+        for txt_file in txt_files:
+            if str(txt_file.log).count("_") == 3:
+                name_concat = str(txt_file.log).split("with", 1)[1][1:].split("_", 2)
+                name = name_concat[0] + '_' + name_concat[1]
+            else:
+                name = str(txt_file.log).split("with", 1)[1][1:].split("_", 1)[0]
 
-        if str(txt_file.log).count("_") == 3:
-            name_concat = str(txt_file.log).split("with", 1)[1][1:].split("_", 2)
-            name = name_concat[0] + '_' + name_concat[1]
-        else:
-            name = str(txt_file.log).split("with", 1)[1][1:].split("_", 1)[0]
+            ct_inst = cls.objects.filter(name=name).first()
+            if ct_inst is None:
+                continue
+            else:
 
-        ct_inst = cls.objects.filter(name=name).first()
-        if ct_inst is None:
-            return
-        else:
+                with open('media/' + str(txt_file.log)) as txtfile:
+                    for line_num, line_msg in enumerate(txtfile):
 
-            with open('media/' + str(txt_file.log)) as txtfile:
-                for line_num, line_msg in enumerate(txtfile):
+                        first_appearance = line_msg.find(":")
+                        if ":" not in line_msg[first_appearance + 1:]:
+                            list_of_msg_line = line_msg.split(",", 1)
+                            if is_date(list_of_msg_line[0]):
+                                Notification.insert_notification(contact=ct_inst, msg_line=line_msg, line=line_num,
+                                                                 log=txt_file)
+                            else:
+                                Message.update_continuing_message(ct_inst, line_msg)
+                                msg_count += 1
 
-                    first_appearance = line_msg.find(":")
-                    if ":" not in line_msg[first_appearance + 1:]:
-                        list_of_msg_line = line_msg.split(",", 1)
-                        if is_date(list_of_msg_line[0]):
-                            Notification.insert_notification(contact=ct_inst, msg_line=line_msg, line=line_num,
-                                                             log=txt_file)
                         else:
-                            Message.update_continuing_message(ct_inst, line_msg)
-                            msg_count += 1
+                            list_of_msg_line = line_msg.split(",", 1)
+                            if is_date(list_of_msg_line[0]):
+                                Message.insert_message(client=name, msg_line=line_msg, line=line_num,
+                                                       log=txt_file)
+                                msg_count += 1
 
-                    else:
-                        list_of_msg_line = line_msg.split(",", 1)
-                        if is_date(list_of_msg_line[0]):
-                            Message.insert_message(client=name, msg_line=line_msg, line=line_num,
-                                                   log=txt_file)
-                            msg_count += 1
-
-                Log.objects.filter(log=txt_file).update(synced=True)
+                    Log.objects.filter(log=txt_file).update(synced=True)
         return msg_count
 
     @classmethod
@@ -291,11 +291,8 @@ class Log(models.Model):
     def get_log_file(cls):
         if cls.objects.filter(synced=False).exists():
             txt_files = cls.objects.filter(synced=False).order_by('id')[:100]
-            for txt_file in txt_files:
-                read = Contact.read_txt_log(txt_file)
-                if read is None:
-                    continue
-            return read
+            read = Contact.read_txt_log(txt_files)
+        return len(read)
 
     @classmethod
     def add_mulitple_logs_from_logs_directory(cls):

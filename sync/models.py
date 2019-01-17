@@ -191,7 +191,7 @@ class Contact(models.Model):
 
         ct_inst = cls.objects.filter(name=name).first()
         if ct_inst is None:
-            return
+            pass
         else:
 
             with open('media/' + str(txt_file.log)) as txtfile:

@@ -91,7 +91,7 @@ class Server(models.Model):
         hosts = cls.connect()
         sender_email = 'info@tmcg.co.ug'
         today = datetime.date.today()
-        cutoff = today - timedelta(days=30)
+        cutoff = today - timedelta(days=150)
         downloads = 0
         if not hosts:
             return 'Not a list'
@@ -191,7 +191,7 @@ class Contact(models.Model):
 
         ct_inst = cls.objects.filter(name=name).first()
         if ct_inst is None:
-            pass
+            return
         else:
 
             with open('media/' + str(txt_file.log)) as txtfile:
@@ -293,6 +293,8 @@ class Log(models.Model):
             txt_files = cls.objects.filter(synced=False).order_by('id')[:100]
             for txt_file in txt_files:
                 read = Contact.read_txt_log(txt_file)
+                if read is None:
+                    continue
             return read
 
     @classmethod
@@ -522,7 +524,7 @@ class Message(models.Model):
         except KeyError:
             return Message.objects.filter(rapidpro_id=message.rapidpro_id).update(rapidpro_label=True)
         req = urllib2.Request(urlcc)
-        req.add_header("Authorization", "Basic %s" % key_health_nav)
+        req.add_header("Authorization", "Basic %s" % key_h_nav)
         response = urllib2.urlopen(req)
         try:
             data = json.load(response)
@@ -543,7 +545,7 @@ class Message(models.Model):
         except KeyError:
             return Message.objects.filter(rapidpro_id=message.rapidpro_id).update(rapidpro_label=True)
         req = urllib2.Request(urldx)
-        req.add_header("Authorization", "Basic %s" % key_health_nav)
+        req.add_header("Authorization", "Basic %s" % key_h_nav)
         response = urllib2.urlopen(req)
         try:
             data = json.load(response)

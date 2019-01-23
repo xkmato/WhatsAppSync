@@ -5,9 +5,10 @@ celery==4.0.2
 certifi==2017.7.27.1
 chardet==3.0.4
 dateutils==0.6.6
-Django==1.10.6
+Django==1.11.16
 django-celery-beat==1.0.1
 django-nose==1.4.4
+djangorestframework==3.9.1
 file-read-backwards==1.2.1
 gdata==2.0.18
 google-api-python-client==1.6.2

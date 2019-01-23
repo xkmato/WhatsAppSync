@@ -17,6 +17,7 @@ from django.conf.urls import url, include
 from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
+from rest_framework.urlpatterns import format_suffix_patterns
 
 admin.site.site_header = settings.ADMIN_SITE_HEADER
 admin.site.index_title = settings.ADMIN_SITE_INDEX
@@ -25,3 +26,8 @@ urlpatterns = [
     url(r'^', admin.site.urls),
     url(r'^', include('sync.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+
+urlpatterns = format_suffix_patterns(urlpatterns)
+
+

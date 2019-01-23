@@ -1,9 +1,11 @@
-from django.shortcuts import render
-from django.http import HttpResponse
+from django.shortcuts import render, get_object_or_404
+from rest_framework.views import APIView
+from rest_framework.response import Response
 from django.db.models import Q
-from django.conf import settings
 import datetime
-from .models import Log, Server, Contact, Attachment, Message, Workspace, RapidProMessages
+from .models import Log, Server, Contact, Attachment, Message, Workspace, RapidProMessages, timedelta
+from .serializers import MessageSerializer, ContactSerializer
+from django.http import HttpResponse
 
 
 def download_attach(request):
@@ -80,3 +82,26 @@ def delete_rapidpro(request):
         ls.append(msg.msg_id)
     deleted = RapidProMessages.message_deleter(ls)
     return render(request, 'deleted.html', locals())
+
+
+# messages/
+class MessageView(APIView):
+    def get(self, request, days):
+        today = datetime.date.today()
+        date = today - timedelta(days=int(days))
+        messages = Message.objects.filter(sent_date__gte=date)
+        serializer = MessageSerializer(messages, many=True)
+        return Response(serializer.data)
+
+
+# contacts/
+class ContactView(APIView):
+    def get(self, request):
+        cc = []
+        today = datetime.date.today()
+        date = today - timedelta(days=30)
+        contacts = Message.objects.filter(sent_date__gte=date)
+        for c in contacts:
+            cc.append(c.contact)
+        serializer = ContactSerializer(cc, many=True)
+        return Response(serializer.data)

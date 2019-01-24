@@ -35,10 +35,6 @@ def is_date(string):
         return False
 
 
-class TZ(tzinfo):
-    def utcoffset(self, dt): return timedelta(minutes=180)  # Getting timezone offset
-
-
 path_extensions = ['media/downloads/*.jpg', 'media/downloads/*.jpeg', 'media/downloads/*.gif', 'media/downloads/*.pdf',
                    'media/downloads/*.opus', 'media/downloads/*.mp3', 'media/downloads/*.docx', 'media/downloads/*.doc',
                    'media/downloads/*.odt', 'media/downloads/*.ics', 'media/downloads/*.PNG', 'media/downloads/*.aac',
@@ -50,7 +46,6 @@ path_ext_files = ['media/files/*.jpg', 'media/files/*.jpeg', 'media/files/*.gif'
                   'media/files/*.odt', 'media/files/*.ics', 'media/files/*.PNG', 'media/files/*.aac',
                   'media/files/*.vcf', 'media/files/*.png', 'media/files/*.xlsx', 'media/files/*.mp4',
                   'media/files/*.opus', ]
-
 
 class TZ(tzinfo):
     def utcoffset(self, dt): return timedelta(minutes=180)  # Getting timezone offset
@@ -357,7 +352,8 @@ class Message(models.Model):
     text = models.TextField()
     attachment = models.ForeignKey(Attachment, null=True, blank=True)
     log = models.ForeignKey(Log)
-    sent_date = models.CharField(max_length=30)
+    sent_date = models.TextField(max_length=30)
+    sent_date_dt = models.DateTimeField(auto_now_add=False)
     rapidpro_sent_on = models.DateTimeField(null=True, blank=True)
     rapidpro_status = models.BooleanField(default=False)
     rapidpro_label = models.BooleanField(default=False)
@@ -408,7 +404,7 @@ class Message(models.Model):
                         else:
                             cls.objects.create(uuid=uuid, contact=contact, text=text,
                                                attachment=attachment_instance,
-                                               log=log, sent_date=new_date)
+                                               log=log, sent_date=new_date, sent_date_dt=new_date)
                             Attachment.objects.filter(file=attachment).update(synced=True)
 
                 else:
@@ -417,7 +413,8 @@ class Message(models.Model):
                         return
                     else:
                         try:
-                            cls.objects.create(uuid=uuid, contact=contact, text=text, log=log, sent_date=new_date)
+                            cls.objects.create(uuid=uuid, contact=contact, text=text, log=log,
+                                               sent_date=new_date, sent_date_dt=new_date)
                         except ValueError:
                             pass
                     return new_date
@@ -431,23 +428,30 @@ class Message(models.Model):
             pass
 
         if not last_message:
-            return str(date) + ':00'
+            return cls.date_format(date + ':00')
         else:
             last_date = last_message.sent_date
-            delimit_ld = last_date.strip().split(":")
+            delimit_ld = str(last_date).strip().split(":")
             delimit_nd = date.strip().split(":")
             last_sec = int(delimit_ld[2])
             if delimit_ld[1] == delimit_nd[1]:
                 if last_sec < 9:
                     new_sec = last_sec + 1
-                    return str(date) + ':0' + str(new_sec)
+                    return cls.date_format(date + ':0' + str(new_sec))
                 elif 9 <= last_sec < 59:
                     new_sec = last_sec + 1
-                    return str(date) + ':' + str(new_sec)
+                    cls.date_format(date + ':' + str(new_sec))
                 elif last_sec < 60:
-                    return str(date) + ':01'
+                    return cls.date_format(date + ':01')
             else:
-                return str(date) + ':00'
+                return cls.date_format(date + ':00')
+
+    @classmethod
+    def date_format(cls, date):
+        d = date.split(",", 1)
+        dt = date.split(",", 1)[0].split("/")
+        new_date = dt[2] + "-" + dt[1] + "-" + dt[0]+" " + d[1][1:]
+        return new_date
 
     @classmethod
     def send_message_to_rapidpro(cls):
@@ -477,11 +481,14 @@ class Message(models.Model):
 
     @classmethod
     def update_continuing_message(cls, contact, msg):
-        last_insert = cls.objects.filter(contact=contact).latest('id')
-        if not last_insert:
-            return
-        new_text = last_insert.text + '. ' + msg
-        cls.objects.filter(uuid=last_insert.uuid).update(text=new_text)
+        try:
+            last_insert = cls.objects.filter(contact=contact).latest('id')
+            if not last_insert:
+                pass
+            new_text = last_insert.text + '. ' + msg
+            cls.objects.filter(uuid=last_insert.uuid).update(text=new_text)
+        except Exception:
+            pass
         return
 
     @classmethod

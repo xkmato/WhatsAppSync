@@ -95,10 +95,10 @@ class MessageView(APIView):
 
 # contacts/
 class ContactView(APIView):
-    def get(self, request):
+    def get(self, request,days):
         cc = []
         today = datetime.date.today()
-        date = today - timedelta(days=340)
+        date = today - timedelta(days=int(days))
         contacts = Message.objects.filter(sent_date_dt__gte=date)
         for c in contacts:
             if c.contact in cc:

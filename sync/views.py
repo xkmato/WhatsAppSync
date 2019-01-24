@@ -102,6 +102,10 @@ class ContactView(APIView):
         date = today - timedelta(days=30)
         contacts = Message.objects.filter(sent_date__gte=date)
         for c in contacts:
-            cc.append(c.contact)
+            if c.contact in cc:
+                pass
+            else:
+                cc.append(c.contact)
+
         serializer = ContactSerializer(cc, many=True)
         return Response(serializer.data)

@@ -290,7 +290,7 @@ class Log(models.Model):
     @classmethod
     def get_log_file(cls):
         if cls.objects.filter(synced=False).exists():
-            txt_files = cls.objects.filter(synced=False).order_by('id')[:100]
+            txt_files = cls.objects.filter(synced=False).order_by('id')
             read = Contact.read_txt_log(txt_files)
         return read
 

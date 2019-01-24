@@ -11,7 +11,6 @@ from dateutil.parser import parse
 from datetime import tzinfo, timedelta, datetime
 import requests
 import urllib2
-import urllib
 import datetime
 import glob
 import json
@@ -150,16 +149,16 @@ class Contact(models.Model):
             dic = dict(zip(df[0], df[30]))
             for key, value in dic.iteritems():
                 if ":" not in str(value):
-                    uuid = hashlib.md5(str(value)).hexdigest()
+                    uuid = hashlib.md5(str(value).replace("+", "").replace(" ", "")).hexdigest()
                     if cls.contact_exists(uuid=uuid):
                         cls.objects.filter(uuid=uuid).update(name=str(key), alt_number="")
                     else:
 
-                        cls.objects.create(uuid=uuid, name=str(key), number=str(value))
+                        cls.objects.create(uuid=uuid, name=str(key), number=str(value).replace("+", "").replace(" ", ""))
                 else:
                     test = str(value).find(":")
-                    first = str(value)[:test - 1]
-                    second = str(value)[test + 4:]
+                    first = str(value)[:test - 1].replace("+", "").replace(" ", "")
+                    second = str(value)[test + 4:].replace("+", "").replace(" ", "")
                     uuid = hashlib.md5(first).hexdigest()
                     if cls.contact_exists(uuid=uuid):
                         cls.objects.filter(uuid=uuid).update(name=str(key), number=first, alt_number=second)

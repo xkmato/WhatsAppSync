@@ -6,7 +6,6 @@ import datetime
 from .models import Log, Server, Contact, Attachment, Message, Workspace, RapidProMessages, timedelta
 from .serializers import MessageSerializer, ContactSerializer
 from django.http import HttpResponse
-import urllib
 
 
 def download_attach(request):
@@ -88,7 +87,7 @@ def delete_rapidpro(request):
 # messages/
 class MessageView(APIView):
     def get(self, request, phone):
-        contact = Contact.objects.filter(number=str(phone).decode())
+        contact = Contact.objects.filter(number=phone)
         messages = Message.objects.filter(contact=contact).order_by('id')
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data)

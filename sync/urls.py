@@ -15,7 +15,7 @@ urlpatterns = [
     url(r'^archive/$', views.archive_rapidpro),
     url(r'^delete/$', views.delete_rapidpro),
     url(r'^api/messages/(\d+)', views.MessageView.as_view()),
-    url(r'^api/contacts/$', views.ContactView.as_view()),
+    url(r'^api/contacts/(\d+)$', views.ContactView.as_view()),
 
 
 ]

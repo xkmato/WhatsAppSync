@@ -149,7 +149,7 @@ class Contact(models.Model):
             dic = dict(zip(df[0], df[30]))
             for key, value in dic.iteritems():
                 if ":" not in str(value):
-                    uuid = hashlib.md5(str(value).replace("+", "").replace(" ", "")).hexdigest()
+                    uuid = hashlib.md5(str(value)).hexdigest()
                     if cls.contact_exists(uuid=uuid):
                         cls.objects.filter(uuid=uuid).update(name=str(key), alt_number="")
                     else:

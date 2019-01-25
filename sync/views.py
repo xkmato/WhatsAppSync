@@ -95,7 +95,7 @@ class MessageView(APIView):
 
 # contacts/
 class ContactView(APIView):
-    def get(self, request,days):
+    def get(self, request, days):
         cc = []
         today = datetime.date.today()
         date = today - timedelta(days=int(days))

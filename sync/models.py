@@ -46,6 +46,7 @@ path_ext_files = ['media/files/*.jpg', 'media/files/*.jpeg', 'media/files/*.gif'
                   'media/files/*.vcf', 'media/files/*.png', 'media/files/*.xlsx', 'media/files/*.mp4',
                   'media/files/*.opus', ]
 
+
 class TZ(tzinfo):
     def utcoffset(self, dt): return timedelta(minutes=180)  # Getting timezone offset
 
@@ -154,7 +155,8 @@ class Contact(models.Model):
                         cls.objects.filter(uuid=uuid).update(name=str(key), alt_number="")
                     else:
 
-                        cls.objects.create(uuid=uuid, name=str(key), number=str(value).replace("+", "").replace(" ", ""))
+                        cls.objects.create(uuid=uuid, name=str(key),
+                                           number=str(value).replace("+", "").replace(" ", ""))
                 else:
                     test = str(value).find(":")
                     first = str(value)[:test - 1].replace("+", "").replace(" ", "")
@@ -382,14 +384,17 @@ class Message(models.Model):
     def save_log_msg(cls, sender, text, line, date, log):
         attachment_ext = ['jpg', 'jpeg', 'gif', 'pdf', 'opus', 'mp3', 'docx', 'doc', 'odt', 'ics', 'PNG', 'aac', 'vcf',
                           'png', 'xlsx', 'mp4']
-        contact = Contact.objects.filter(name=sender).first()
+        try:
+            contact = Contact.objects.filter(name=sender).first()
+        except Exception:
+            pass
 
-        if contact is None:
-            return
+        if not contact:
+            pass
         else:
             uuid = hashlib.md5(str(contact.number) + str(line) + str(date)).hexdigest()
             if cls.message_exists(uuid):
-                return
+                pass
             else:
 
                 if "(file attached)" in text:
@@ -399,24 +404,24 @@ class Message(models.Model):
                         attachment_instance = Attachment.objects.filter(file=attachment).first()
                         new_date = cls.second_incrementer(contact, date)
                         if not new_date:
-                            return
+                            pass
                         else:
                             cls.objects.create(uuid=uuid, contact=contact, text=text,
                                                attachment=attachment_instance,
                                                log=log, sent_date=new_date, sent_date_dt=new_date)
-                            Attachment.objects.filter(file=attachment).update(synced=True)
+                            return Attachment.objects.filter(file=attachment).update(synced=True)
 
                 else:
                     new_date = cls.second_incrementer(contact, date)
                     if not new_date:
-                        return
+                        pass
                     else:
                         try:
-                            cls.objects.create(uuid=uuid, contact=contact, text=text, log=log,
-                                               sent_date=new_date, sent_date_dt=new_date)
+                            return cls.objects.create(uuid=uuid, contact=contact, text=text, log=log,
+                                                      sent_date=new_date, sent_date_dt=new_date)
                         except ValueError:
                             pass
-                    return new_date
+                    return
 
     @classmethod
     def second_incrementer(cls, contact, date):
@@ -449,7 +454,7 @@ class Message(models.Model):
     def date_format(cls, date):
         d = date.split(",", 1)
         dt = date.split(",", 1)[0].split("/")
-        new_date = dt[2] + "-" + dt[1] + "-" + dt[0]+" " + d[1][1:]
+        new_date = dt[2] + "-" + dt[1] + "-" + dt[0] + " " + d[1][1:]
         return new_date
 
     @classmethod

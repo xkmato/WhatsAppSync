@@ -354,7 +354,7 @@ class Message(models.Model):
     attachment = models.ForeignKey(Attachment, null=True, blank=True)
     log = models.ForeignKey(Log)
     sent_date = models.TextField(max_length=30)
-    sent_date_dt = models.DateTimeField(auto_now_add=False)
+    sent_date_dt = models.DateTimeField(auto_now_add=False, null=True)
     rapidpro_sent_on = models.DateTimeField(null=True, blank=True)
     rapidpro_status = models.BooleanField(default=False)
     rapidpro_label = models.BooleanField(default=False)
@@ -394,7 +394,7 @@ class Message(models.Model):
         else:
             uuid = hashlib.md5(str(contact.number) + str(line) + str(date)).hexdigest()
             if cls.message_exists(uuid):
-                pass
+                return
             else:
 
                 if "(file attached)" in text:
@@ -404,7 +404,7 @@ class Message(models.Model):
                         attachment_instance = Attachment.objects.filter(file=attachment).first()
                         new_date = cls.second_incrementer(contact, date)
                         if not new_date:
-                            pass
+                            return
                         else:
                             cls.objects.create(uuid=uuid, contact=contact, text=text,
                                                attachment=attachment_instance,
@@ -414,14 +414,14 @@ class Message(models.Model):
                 else:
                     new_date = cls.second_incrementer(contact, date)
                     if not new_date:
-                        pass
+                        return
                     else:
                         try:
                             return cls.objects.create(uuid=uuid, contact=contact, text=text, log=log,
                                                       sent_date=new_date, sent_date_dt=new_date)
                         except ValueError:
-                            pass
-                    return
+                            return
+        return
 
     @classmethod
     def second_incrementer(cls, contact, date):
@@ -488,7 +488,7 @@ class Message(models.Model):
         try:
             last_insert = cls.objects.filter(contact=contact).latest('id')
             if not last_insert:
-                pass
+                return
             new_text = last_insert.text + '. ' + msg
             cls.objects.filter(uuid=last_insert.uuid).update(text=new_text)
         except Exception:

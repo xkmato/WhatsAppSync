@@ -1,9 +1,138 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
+from rest_framework.views import APIView
+from django.db.models import Q
+import datetime
+from .models import Log, Server, Contact, Attachment, Message, Workspace, RapidProMessages, timedelta
+from .serializers import MessageSerializer, ContactSerializer
 from django.http import HttpResponse
-from django.conf import settings
-from .models import Log, Message
+from django.contrib.auth import authenticate
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.authtoken.models import Token
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.status import (
+    HTTP_400_BAD_REQUEST,
+    HTTP_404_NOT_FOUND,
+    HTTP_200_OK
+)
+from rest_framework.response import Response
 
 
-def index(request):
-    messages = Message.send_to_rapidpro()
-    return render(request, 'sync/home.html', {'messages': messages})
+def download_attach(request):
+    downloads = Server.sync_data()
+    return render(request, 'download_attach.html', locals())
+
+
+def close_connection(request):
+    Server.close_connection()
+    return render(request, 'close.html', locals())
+
+
+def call_center_contacts(request):
+    contacts = Contact.read_contact_csv()
+    return render(request, 'contacts.html', locals())
+
+
+def move_files(request):
+    attachments = Attachment.move_mulitple_files()
+    logs = Log.move_mulitple_logs()
+    return render(request, 'move_files.html', locals())
+
+
+def enter_files_into_the_db(request):
+    logs = Log.add_mulitple_logs_from_logs_directory()
+    attachments = Attachment.add_mulitple_files_from_files_directory()
+    return render(request, 'add.html', locals())
+
+
+def read_logs(request):
+    read = Log.get_log_file()
+    return render(request, 'read_logs.html', locals())
+
+
+def send_rapidpro_data(request):
+    message = Message.send_message_to_rapidpro()
+    return render(request, 'sendtorapidpro.html', locals())
+
+
+def label_rapidpro_data(request):
+    message = Message.get_messages_to_label()
+    return render(request, 'labelrapidpro.html', locals())
+
+
+def get_rapidpro_messages(request):
+    downloaded = RapidProMessages.get_rapidpro_messages(Workspace.get_rapidpro_workspaces())
+    return render(request, 'getrapidpromessages.html', locals())
+
+
+def archive_rapidpro(request):
+    d = '2017 1 1'
+    date = datetime.datetime.strptime(d, '%Y %m %d')
+    i = 0
+    while i < 1000:
+        msgs = RapidProMessages.objects.filter(Q(modified_on__gte=date) & Q(archived=False)).order_by('id')[:100]
+        archived = 0
+        ls = []
+        if not msgs:
+            return
+        for msg in msgs:
+            ls.append(msg.msg_id)
+        archived = RapidProMessages.message_archiver(ls)
+        i += 1
+    return render(request, 'archived.html', locals())
+
+
+def delete_rapidpro(request):
+    d = '2018 6 19'
+    date = datetime.datetime.strptime(d, '%Y %m %d')
+    msgs = RapidProMessages.objects.filter(Q(modified_on__gte=date) & Q(deleted=False)).order_by('id')[:100]
+    deleted = 0
+    ls = []
+    for msg in msgs:
+        ls.append(msg.msg_id)
+    deleted = RapidProMessages.message_deleter(ls)
+    return render(request, 'deleted.html', locals())
+
+
+# messages/
+class MessageView(APIView):
+    def get(self, request, phone):
+        contact = Contact.objects.filter(number=phone)
+        messages = Message.objects.filter(contact=contact).order_by('id')
+        serializer = MessageSerializer(messages, many=True)
+        return Response(serializer.data)
+
+
+# contacts/
+class ContactView(APIView):
+    def get(self, request, days):
+        cc = []
+        today = datetime.date.today()
+        date = today - timedelta(days=int(days))
+        contacts = Message.objects.filter(sent_date_dt__gte=date)
+        for c in contacts:
+            if c.contact in cc:
+                pass
+            else:
+                cc.append(c.contact)
+
+        serializer = ContactSerializer(cc, many=True)
+        return Response(serializer.data)
+
+
+@csrf_exempt
+@api_view(["POST"])
+@permission_classes((AllowAny,))
+def login(request):
+    username = request.data.get("username")
+    password = request.data.get("password")
+    if username is None or password is None:
+        return Response({'error': 'Please provide both username and password'},
+                        status=HTTP_400_BAD_REQUEST)
+    user = authenticate(username=username, password=password)
+    if not user:
+        return Response({'error': 'Invalid Credentials'},
+                        status=HTTP_404_NOT_FOUND)
+    token, _ = Token.objects.get_or_create(user=user)
+    return Response({'token': token.key},
+                    status=HTTP_200_OK)
